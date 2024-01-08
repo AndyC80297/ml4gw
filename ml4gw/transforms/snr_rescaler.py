@@ -37,24 +37,36 @@ class SnrRescaler(FittableSpectralTransform):
         *background: torch.Tensor,
         fftlength: Optional[float] = None,
         overlap: Optional[float] = None,
+        use_pre_cauculated_psd: bool = False
     ):
-        if len(background) != self.num_channels:
-            raise ValueError(
-                "Expected to fit whitening transform on {} background "
-                "timeseries, but was passed {}".format(
-                    self.num_channels, len(background)
+        
+        if use_pre_cauculated_psd: 
+            # The changes here may cause imbiguity 
+            # when passing the background argumnets.
+            # Consider using typing or other method 
+            # to clarify on the input "background"
+            # Also, please consider shape or size check 
+            # for the input psd tensor
+            super().build(background=background)
+            
+        else:
+            if len(background) != self.num_channels:
+                raise ValueError(
+                    "Expected to fit whitening transform on {} background "
+                    "timeseries, but was passed {}".format(
+                        self.num_channels, len(background)
+                    )
                 )
-            )
 
-        num_freqs = self.background.size(1)
-        psds = []
-        for x in background:
-            psd = self.normalize_psd(
-                x, self.sample_rate, num_freqs, fftlength, overlap
-            )
-            psds.append(psd)
-        background = torch.stack(psds)
-        super().build(background=background)
+            num_freqs = int(fftlength * self.sample_rate/2) + 1
+            psds = []
+            for x in background:
+                psd = self.normalize_psd(
+                    x, self.sample_rate, num_freqs, fftlength, overlap
+                )
+                psds.append(psd)
+            background = torch.stack(psds)
+            super().build(background=background)
 
     def forward(
         self,
@@ -71,4 +83,4 @@ class SnrRescaler(FittableSpectralTransform):
         weights = target_snrs / snrs
         rescaled_responses = responses * weights.view(-1, 1, 1)
 
-        return rescaled_responses, target_snrs
+        return rescaled_responses, target_snrs, weights
