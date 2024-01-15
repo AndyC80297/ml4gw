@@ -47,6 +47,10 @@ class SnrRescaler(FittableSpectralTransform):
             # to clarify on the input "background"
             # Also, please consider shape or size check 
             # for the input psd tensor
+            psds = []
+            for x in background:
+                psds.append(x)
+            background = torch.stack(psds)
             super().build(background=background)
             
         else:
@@ -58,7 +62,8 @@ class SnrRescaler(FittableSpectralTransform):
                     )
                 )
 
-            num_freqs = int(fftlength * self.sample_rate/2) + 1
+            # num_freqs = int(fftlength * self.sample_rate/2) + 1
+            num_freqs = self.background.size(1)
             psds = []
             for x in background:
                 psd = self.normalize_psd(
