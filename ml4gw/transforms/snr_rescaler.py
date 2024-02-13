@@ -13,7 +13,7 @@ class SnrRescaler(FittableSpectralTransform):
         sample_rate: float,
         waveform_duration: float,
         highpass: Optional[float] = None,
-        dtype: torch.dtype = torch.float32,
+        dtype: torch.dtype = torch.float64,
     ) -> None:
         super().__init__()
         self.highpass = highpass
@@ -81,6 +81,8 @@ class SnrRescaler(FittableSpectralTransform):
         snrs = gw.compute_network_snr(
             responses, self.background, self.sample_rate, self.mask
         )
+        # print("BackGround :", self.background)
+        # print(snrs)
         if target_snrs is None:
             idx = torch.randperm(len(snrs))
             target_snrs = snrs[idx]
